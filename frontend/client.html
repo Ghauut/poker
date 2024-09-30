@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Game with FastAPI</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #game { display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>FastAPI Poker Game</h1>
+    <div id="join">
+        <label for="player_id">Enter Player ID:</label>
+        <input type="text" id="player_id" placeholder="Player1">
+        <button onclick="joinGame()">Join Game</button>
+    </div>
+
+    <div id="game">
+        <h2>Game Started!</h2>
+        <div id="hand"></div>
+        <div id="pot">Pot: 0</div>
+        <div id="actions">
+            <button onclick="bet(50)">Bet 50</button>
+            <button onclick="startGame()">Start Game</button>
+        </div>
+    </div>
+
+    <script>
+        var playerId = '';
+        var socket;
+
+        function joinGame() {
+            playerId = document.getElementById('player_id').value;
+            socket = new WebSocket(`ws://localhost:8000/ws/${playerId}`);
+
+            socket.onmessage = function(event) {
+                let data = JSON.parse(event.data);
+                if (data.message) {
+                    console.log(data.message);
+                }
+                if (data.hands) {
+                    updateHand(data.hands[playerId]);
+                }
+                if (data.pot) {
+                    document.getElementById('pot').innerText = 'Pot: ' + data.pot;
+                }
+            };
+
+            document.getElementById('join').style.display = 'none';
+            document.getElementById('game').style.display = 'block';
+        }
+
+        function updateHand(hand) {
+            document.getElementById('hand').innerText = 'Your hand: ' +
+                hand[0].value + ' of ' + hand[0].suit + ', ' +
+                hand[1].value + ' of ' + hand[1].suit;
+        }
+
+        function bet(amount) {
+            socket.send(`bet:${amount}`);
+        }
+
+        function startGame() {
+            socket.send('start_game');
+        }
+    </script>
+</body>
+</html>
